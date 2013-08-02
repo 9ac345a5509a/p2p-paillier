@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Paillier Cryptosystem</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	</head>
+	<body>
+		<noscript>
+			Javascript is required for use of the adder. The accompanying text is still readable. (You are not missing much, it is just addition.) 
+		</noscript>
+		<div class="container" style="padding: 30px;">
+			<form> <fieldset>
+				<legend>Input two numbers to add them (Distributed and Encrypted)</legend>
+				<div class="row">
+					<div class="span3"><input type="text" id="inpA"></div>
+					<div class="span1" style="text-align: center;">+</div>
+					<div class="span3"><input type="text" id="inpB"></div>
+					<div class="span1" style="text-align: center;">=</div>
+					<div class="span3"><input type="text" id="outC" disabled>
+					<div class="span1" style="text-align: right;">
+						<button type="button" class="btn btn-primary" onclick="distributeAddition();">
+							Add
+						</button>
+					</div>
+				</div>
+			</form></fieldset>
+		</div>
+		<div class="container">
+			<div class="row">
+				<div class="span6" id="blurb">
+					<p>
+						Addition is done by encrypting the numbers and then sending them to a centralized server. The centralized server then redistributes the two numbers to peers, who add them. The peers send the result back to the server, who sends it back to your computer, and your computer decrypts it. However, the numbers are <i>never decrypted</i> by the server or the peers. These peers have added two numbers together without even knowing what they are. This is done using a mathematical construction known as the <a href="http://en.wikipedia.org/wiki/Paillier_cryptosystem" target="_blank">Paillier Cryptosystem</a>.
+					</p>
+					<p>
+						The Paillier Cryptosystem only allows for the addition of numbers, it supports what is known as Partially Homomorphic Encryption scheme. Recently (2009), <a href="http://crypto.stanford.edu/craig/" target="_blank">Craig Gentry</a> constructed a Fully Homomorphic Encryption scheme (FHE), permitting both the addition and multiplication of numbers. FHE is not used here due to practical considerations. FHE could have a potentially enormous impact for cloud computing firms and privacy advocates. Readers interested in current implementations of FHE are directed to <a href="https://github.com/shaih/HElib" target="_blank">HElib</a> (sadly incomplete).
+					</p>
+				</div>
+				<div class="span6">
+					<textarea id="log" style="width: 100%; font-family: monospace;" disabled></textarea>
+				</div>
+			</div>
+		</div>
+		<div class="container row well" style="text-align: center;" >
+			Like this? Consider donating Bitcoin: 
+			<span class="badge badge-info">133VB1bfTsdEKp6ovyUTrXRfH4HgNxBdQQ</span>
+		</div>
+
+		<script src="https://cdn.firebase.com/v0/firebase.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+		<script>
+			function strip6(text) {
+				if (text.length >= 6) {
+					return text.substring(0,3) + '...' + text.slice(-3);
+				} else {
+					return text;
+				}
+			}
+			function addToLog(text) {
+				var txtLog = $('#log');
+				txtLog.height($('#blurb').height());
+				txtLog.append(text);
+				$('#log').animate({
+				    scrollTop:$('#log')[0].scrollHeight - $('#log').height()
+				},10);
+			}
+			function addBigIntToLog(bi) {
+				addToLog(strip6(bigInt2str(bi, 10)));
+			}
+		</script>
+		<script src="BigInt.js"></script>
+		<script src="paillier.js"></script>
+		<script src="distribute.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script>
+			var keychain;
+			var publicKey;
+			var privateKey;
+			keychain   = initPaillier();
+			publicKey  = keychain[0];
+			privateKey = keychain[1];
+		</script>
+	</body>
+</html>
