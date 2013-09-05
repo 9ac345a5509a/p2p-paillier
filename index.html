@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Distributed Homomorphic Encryption Adder</title>
+		<title>Paillier Cryptosystem</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 	</head>
@@ -74,12 +74,8 @@
 		<script src="distribute.js"></script>
 		<script src="bootstrap/js/bootstrap.min.js"></script>
 		<script>
-			var keychain;
-			var publicKey;
-			var privateKey;
-			keychain   = initPaillier();
-			publicKey  = keychain[0];
-			privateKey = keychain[1];
+			var paillier = new PaillierCS();
+			paillier.init(1); /* Start in DEBUG. */
 		</script>
 	</body>
 </html>
