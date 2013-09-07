@@ -1,112 +1,112 @@
 var firebaseMaster = new Firebase('http://paillier-cs.firebaseIO.com/');
-var myId;
-var awaitingConsensus = 0;
-var DEBUG = 1;
-var recId = [];
-var recSum = [];
+var firebaseReference = {};
 
-function makeId() {
-	id = '';
-	for (i = 0; i < 36; i++) {
-		id += String.fromCharCode(Math.floor(Math.random() * 26) + 97);
-	}
-	return id;
+function Distribute(paillier, debugmode) {
+	this.id = '';
+	this.awaitingConsensus = 0;
+	this.DEBUG = debugmode;
+	this.pcs = paillier;
+	this.recId = [];
+	this.recSum= [];
+	firebaseReference = this;
+
+	this.makeID = function() {
+		id = '';
+		for (i = 0; i < 36; i++) {
+			id += String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+		}
+		this.id = id;
+	};
+	this.distributeAddition = function() {
+		if (this.awaitingConsensus) {
+			return;
+		}
+		var decA = str2bigInt($('#inpA').val(), 10, 
+					this.pcs.bitLength, this.pcs.bitLength);
+		var decB = str2bigInt($('#inpB').val(), 10, 
+					this.pcs.bitLength, this.pcs.bitLength);
+		var cipherA = this.pcs.encryptInteger(decA);
+		var cipherB = this.pcs.encryptInteger(decB);
+		this.makeID();
+		if (this.DEBUG) {
+			addToLog('[' + strip6(this.id) + '] '
+			+ 'Requested multiplication of ' + b2s(cipherA) + ' and '
+			+ b2s(cipherB) + '\n');
+		}
+		this.recSum = [];
+		this.awaitingConsensus = 1;
+		firebaseMaster.push({action: 'add', 
+							 date: Date.now(),
+							 id: this.id,
+							 cA: bigInt2str(cipherA, 2),
+							 cB: bigInt2str(cipherB, 2),
+							 n:  bigInt2str(this.pcs.n, 2)});
+		if (this.DEBUG) {
+			$('#outC').val('Awaiting network consensus...');
+			$('#outC').addClass('btn-inverse');
+			$('#inpA, #inpB').attr('disabled', '');
+		}
+		var _this = this;
+		setTimeout(function(){_this.getConsensus();}, 5000);
+	};
+
+	this.getConsensus = function() {
+		var freqOfSum = 0;
+		var popularSum;
+		var histogram = {};
+		for (var i = 0; i < this.recSum.length; i++) {
+			sum = dup(this.recSum[i]);
+			histogram[sum] = (histogram[sum] || 0) + 1;
+			if (histogram[sum] > freqOfSum) {
+				freqOfSum = histogram[sum];
+				popularSum = dup(sum);
+			}
+		}
+		this.awaitingConsensus = 0;
+		if (this.DEBUG) {
+			$('#outC').val(bigInt2str(
+				this.pcs.decryptRecAns(popularSum),
+				10));
+			$('#outC').removeClass('btn-inverse');
+			$('#inpA, #inpB').removeAttr('disabled');
+		}
+	};
 }
 
-function distributeAddition() {
-	if (awaitingConsensus == 1) {
-		return;
-	}
-	var decA = str2bigInt($('#inpA').val(), 10, 
-				paillier.bitLength, paillier.bitLength);
-	var decB = str2bigInt($('#inpB').val(), 10, 
-				paillier.bitLength, paillier.bitLength);
-	var cipherA = paillier.encryptInteger(decA);
-	var cipherB = paillier.encryptInteger(decB);
-	myId = makeId();
-	if (DEBUG) {
-		addToLog('[' + strip6(myId) + '] ');
-		addToLog('Requested multiplication of ');
-		addBigIntToLog(cipherA);
-		addToLog(' and ');
-		addBigIntToLog(cipherB);
-		addToLog('\n');
-	}
-	recSum = [];
-	awaitingConsensus = 1;
-	firebaseMaster.push({action: 'add', 
-						 date: Date.now(),
-						 id: myId,
-						 cA: bigInt2str(cipherA, 2),
-						 cB: bigInt2str(cipherB, 2),
-						 n:  bigInt2str(paillier.n, 2)});
-	if (DEBUG) {
-		$('#outC').val('Awaiting network consensus...');
-		$('#outC').addClass('btn-inverse');
-		$('#inpA, #inpB').attr('disabled', '');
-	}
-	setTimeout(getConsensus, 5000);
-}
+messageQuery = firebaseMaster.endAt().limit(10);
 
-var messageQuery = firebaseMaster.endAt().limit(10);
+function messageQueryCallback(snapshot) {
+	var msg = snapshot.val();
+	var fbR = firebaseReference;
+	if (msg.action == 'add' &&
+		$.inArray(msg.id, fbR.recId) == -1 && 
+		Date.now() - msg.date < 5000) {
 
-if (DEBUG) {
-	addToLog('Joining the network as a peer.\n');
-}
+		var cA = str2bigInt(msg.cA, 2, msg.cA.length, msg.cA.length);
+		var cB = str2bigInt(msg.cB, 2, msg.cB.length, msg.cB.length);
+		var rN = str2bigInt(msg.n , 2, msg.n.length,  msg.n.length);
+		var sum= fbR.pcs.addEncIntegers(cA, cB, rN);
 
-messageQuery.on('child_added', function(snapshot) {
-	var message = snapshot.val();
-	if (message.action == 'add' &&
-		$.inArray(message.id, recId) == -1 && 
-		Date.now() - message.date < 5000) {
-
-		var cA = str2bigInt(message.cA, 2, message.cA.length, message.cA.length);
-		var cB = str2bigInt(message.cB, 2, message.cB.length, message.cB.length);
-		var rN = str2bigInt(message.n , 2, message.n.length,  message.n.length);
-		var sum= paillier.addEncIntegers(cA, cB, rN);
-
-		if (DEBUG) {
-			addToLog('[' + strip6(message.id) + '] ');
-			addToLog('Multiplied ');
-			addToLog('cA = '); addBigIntToLog(cA);
-			addToLog('; cB = '); addBigIntToLog(cB);
-			addToLog('; cA * cB = '); addBigIntToLog(sum);
-			addToLog('\n');
+		if (fbR.DEBUG) {
+			addToLog('[' + strip6(msg.id) + '] Multiplied '
+			+ 'cA = ' + b2s(cA) + '; cB = ' + b2s(cB) + '; '
+			+ 'cAcB = ' + b2s(sum) + '\n');
 		}
 
 		firebaseMaster.push({
 			action: 'send',
-			id: message.id,
+			id: msg.id,
 			answer: bigInt2str(sum, 2)
 		});
-		recId.push(message.id);
+		fbR.recId.push(msg.id);
 
-	} else if (message.action == 'send') {
-		if (message.id == myId &&
-			awaitingConsensus == 1) {
-			recSum.push(str2bigInt(message.answer, 2, message.answer.length, message.answer.length));
+	} else if (msg.action == 'send') {
+		if (msg.id == this.id &&
+			fbR.awaitingConsensus) {
+			var ans = msg.answer;
+			fbR.recSum.push(str2bigInt(ans, 2, ans.length, ans.length));
 		}
 	}
-});
+};
 
-function getConsensus() {
-	var freqOfSum = 0;
-	var popularSum;
-	var histogram = {};
-	for (var i = 0; i < recSum.length; i++) {
-		sum = dup(recSum[i]);
-		histogram[sum] = (histogram[sum] || 0) + 1;
-		if (histogram[sum] > freqOfSum) {
-			freqOfSum = histogram[sum];
-			popularSum = dup(sum);
-		}
-	}
-	awaitingConsensus = 0;
-	if (DEBUG) {
-		$('#outC').val(bigInt2str(
-			paillier.decryptRecAns(popularSum),
-			10));
-		$('#outC').removeClass('btn-inverse');
-		$('#inpA, #inpB').removeAttr('disabled');
-	}
-}
+messageQuery.on('child_added', messageQueryCallback);
