@@ -20,7 +20,7 @@
 					<div class="span1" style="text-align: center;">=</div>
 					<div class="span3"><input type="text" id="outC" disabled></div>
 					<div class="span1" style="text-align: right;">
-						<button type="button" class="btn btn-primary" onclick="distributeAddition();">
+						<button type="button" class="btn btn-primary" onclick="distributor.distributeAddition();">
 							Add
 						</button>
 					</div>
@@ -65,8 +65,8 @@
 				    scrollTop:$('#log')[0].scrollHeight - $('#log').height()
 				},10);
 			}
-			function addBigIntToLog(bi) {
-				addToLog(strip6(bigInt2str(bi, 10)));
+			function b2s(bi) {
+				return strip6(bigInt2str(bi, 10));
 			}
 		</script>
 		<script src="BigInt.js"></script>
@@ -75,6 +75,7 @@
 		<script src="bootstrap/js/bootstrap.min.js"></script>
 		<script>
 			var paillier = new PaillierCS();
+			var distributor = new Distribute(paillier, 1);
 			paillier.init(1); /* Start in DEBUG. */
 		</script>
 	</body>
