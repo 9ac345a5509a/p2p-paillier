@@ -30,9 +30,7 @@ function PaillierCS() {
 		nSquared = mult(this.n, this.n);
 
 		if (DEBUG) {
-			addToLog('Generated n as ');
-			addBigIntToLog(this.n);
-			addToLog('\n');
+			addToLog('Generated n as ' + b2s(this.n) + '\n');
 		}
 
 		/* Calculate lambda=lcm(p-1, q-1)=(p-1)(q-1)/GCD(p-1, q-1)*/
@@ -41,9 +39,7 @@ function PaillierCS() {
 		cd = GCD(pMinusOne, qMinusOne);
 		divide_(mult(pMinusOne, qMinusOne), cd, this.lambda, rem);
 		if (DEBUG) {
-			addToLog('Generated λ as ');
-			addBigIntToLog(this.lambda);
-			addToLog('\n');
+			addToLog('Generated λ as ' + b2s(this.lambda) + '\n');
 		}
 
 		/* Find suitable g such that mu exists */
@@ -55,9 +51,7 @@ function PaillierCS() {
 		} while(this.mu == null);
 
 		if (DEBUG) {
-			addToLog('Generated μ as ');
-			addBigIntToLog(this.mu);
-			addToLog('\n');
+			addToLog('Generated μ as ' + b2s(this.mu) + '\n');
 		}
 	};
 
